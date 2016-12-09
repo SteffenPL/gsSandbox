@@ -1,0 +1,18 @@
+<axl>
+ <surface shader="" type="bspline" name="goSurfaceBSpline3" color="160 160 164">
+  <dimension>3</dimension>
+  <number>3 3</number>
+  <order>3 3</order>
+  <knots>0 0 0 1 1 1 </knots>
+  <knots>0 0 0 1 1 1 </knots>
+  <points>0 0 0
+	1 0 0
+	2 0 0
+	0 1 0
+	0.777718 0.643298 0.0919615
+	2 1 0
+	0 2 0
+	1 2 0
+	2 2 0</points>
+ </surface>
+</axl>
