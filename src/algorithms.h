@@ -66,10 +66,6 @@ gsTensorNurbs<2, real_t> centricPotentialFlow(const gsBSpline<> &curve ,
                                               real_t midPoint_y);
 
 
-template< typename T >
-T gaussQuadrature( const gsFunction<T> f , const gsVector<T>& n );
-
-
 
 
 } //end namespace gismo

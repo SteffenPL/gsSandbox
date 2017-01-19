@@ -22,6 +22,7 @@ int main( int argc , char** argv )
     std::string exactExpr = "sin(x) + cos(y)";
     std::string boundaryMethod = "elimination";
 
+    std::string singularitySide = "w";
     
     
     // 0. Parse Input
@@ -30,6 +31,7 @@ int main( int argc , char** argv )
     cmd.addString( "i" , "input" , "Gismo .xml file containing the parameterization of the domain as a tensor nurbs curve." , domainFilePath );
     cmd.addString( "o" , "output" , "Output filename." , outputName );
     cmd.addSwitch( "polar" , "If the domain is parameterizised using a polar coordinate system, different boundary conditions apply." , bPolar );
+    cmd.addString("s","singularity", "Side where the singularity of the polar map lies. (n,s,w,e)" , singularitySide );
     cmd.addSwitch("plot","Plot the solution using paraview." , bPlot );
     cmd.addString("b","boundary","Function expression in x,y to describe the boundary values", boundaryExpr );
     cmd.addString("r","rhs","Function expression in x,y to describe the rhs", rhsExpr );
@@ -113,17 +115,51 @@ int main( int argc , char** argv )
         }
         else
         {
-            //neu: e w , perod: n s
-            bcInfo.addCondition( boundary::side::south
+            boundary::side singularity;
+            boundary::side dirichletSide;
+            boundary::side periodicSide1;
+            boundary::side periodicSide2;
+            
+            
+            if( singularitySide=="n" || singularitySide=="north" )
+            {
+                singularity = boundary::side::north;
+                dirichletSide = boundary::side::south;
+                periodicSide1 = boundary::side::east;
+                periodicSide2 = boundary::side::west;
+            }
+            if( singularitySide=="s" || singularitySide == "south" )
+            {
+                singularity = boundary::side::south;
+                dirichletSide = boundary::side::north;
+                periodicSide1 = boundary::side::east;
+                periodicSide2 = boundary::side::west;
+            }
+            if( singularitySide=="w" || singularitySide == "west" )
+            {
+                singularity = boundary::side::west;
+                dirichletSide = boundary::side::east;
+                periodicSide1 = boundary::side::north;
+                periodicSide2 = boundary::side::south;
+            }
+            if( singularitySide=="e" || singularitySide == "east" )
+            {
+                singularity = boundary::side::east;
+                dirichletSide = boundary::side::west;
+                periodicSide1 = boundary::side::north;
+                periodicSide2 = boundary::side::south;
+            }
+            
+            bcInfo.addCondition( singularity 
                                 , condition_type::neumann
                                 , &zero );
 
-            bcInfo.addCondition( boundary::side::north
+            bcInfo.addCondition( dirichletSide
                                 , condition_type::dirichlet
                                 , &boundaryValues );
 
-            patch.gsBoxTopology::addInterface(0 ,boxSide(boundary::side::east) ,
-                                            0 , boxSide(boundary::side::west));
+            patch.gsBoxTopology::addInterface(0 ,boxSide(periodicSide1) ,
+                                            0 , boxSide(periodicSide2));
         }
 
         // init poisson pde

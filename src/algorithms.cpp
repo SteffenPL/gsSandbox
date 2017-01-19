@@ -450,7 +450,7 @@ gsTensorNurbs<2, real_t> naivePolarChart(gsBSpline<> boundary
 
 
     gsMatrix<real_t, 1, 2> center;
-    center << 0.13 , 0.03;
+    center << 0.5 , 0.5;
 
     gsMatrix<real_t> coefs(boundary.coefsSize() * numberOfPolarLines , 2);
 
@@ -459,7 +459,7 @@ gsTensorNurbs<2, real_t> naivePolarChart(gsBSpline<> boundary
     for (double j = 0 ; j < boundary.coefsSize() ; ++j) {
         for (double i = 0 ; i < numberOfPolarLines ; ++i) {
             double p = i / (dNumOfPolarLines - 1.);
-            coefs.row(k++) = (1. - p) * boundary.coef(j) + p * center;
+            coefs.row(k++) =  p * boundary.coef(j) + (1.-p) * center;
         }
     }
 
@@ -480,19 +480,6 @@ gsTensorNurbs<2, real_t> centricPotentialFlow(const gsBSpline<> &curve ,
 
 }
 
-
-template< typename T >
-T gaussQuadrature( const gsFunction<T> f , const gsVector<T>& n )
-{
-    // Source: https://pomax.github.io/bezierinfo/legendre-gauss.html
-    double weights[6] = {0.3607615730481386,0.3607615730481386,0.4679139345726910,
-        0.4679139345726910,0.1713244923791704,0.1713244923791704};
-        
-    double points[6] = {0.6612093864662645,-0.6612093864662645,-0.2386191860831969,
-        0.2386191860831969,-0.9324695142031521,0.9324695142031521};
-        
-    
-}
 
 
 

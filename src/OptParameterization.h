@@ -46,10 +46,11 @@ namespace gismo
     }
     
     template< typename T >
-    T integrateFunctional( const gsTensorNurbs<2,T>& surface, T(*F)( const gsMatrix<T,2,2>&) , bool onParameterSpace = true);
+    T integrateFunctional( const gsTensorNurbs<2,T>& surface, T(*F)( const gsMatrix<T,2,2>&) , bool onParameterSpace = true
+    , int quadratureDegree = 6 );
     
 
-template< typename T > 
+template< typename T , int N > 
 class OptParameterization : public  gsOptProblem<T>
 {
 public:
@@ -64,7 +65,7 @@ public:
     
 public:
     
-    void setParameterization( const gsTensorNurbs<2,T>& parameterization );
+    void setParameterization( const gsTensorNurbs<2,T>& parameterization , bool polar = false );
     const gsTensorNurbs<2,T>& getParameterization();
     
 private:
@@ -76,6 +77,9 @@ public:
     
     void setForcePositiveDeterminate( bool value = true ) 
     { m_bForcePositiveDet = value; }
+    
+    bool isPolar() const;
+    bool setPolar( bool polar = true );
     
     /// \brief Returns the gradient value of the objective function at design
     /// value \a u
@@ -99,6 +103,9 @@ public:
     virtual void hessLagr_into( const gsAsConstVector<T> & u, gsAsVector<T> & result ) const
     {GISMO_NO_IMPLEMENTATION }
     
+    ///TODO: move to private
+    
+    int m_orderOfQuadrature;
     
 private:
     mutable gsTensorNurbs<2,T>  m_param;
@@ -107,6 +114,8 @@ private:
     
     GeometricFunctional m_functional;
     bool m_bForcePositiveDet;
+    bool m_bCounterclockwise;
+    bool m_bPolar;
 };
 
 

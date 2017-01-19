@@ -1,8 +1,3 @@
-#include "OptParameterization.h"
-
-// how to include Eigen correctly here?
-#include <Eigen/Dense>
-
 #include <limits>
 
 namespace gismo
@@ -17,7 +12,7 @@ T determinant(const gsMatrix<T, 2, 2> &J)
     
 // geometric measures
 template< typename T >
-T integrateFunctional( const gsTensorNurbs<2,T>& surface, T(*F)( const gsMatrix<T,2,2>&), bool onParameterSpace )
+T integrateFunctional( const gsTensorNurbs<2,T>& surface, T(*F)( const gsMatrix<T,2,2>&), bool onParameterSpace , int quadratureDegree)
 {
     /*
     gsVector<T> p1(2);
@@ -25,11 +20,7 @@ T integrateFunctional( const gsTensorNurbs<2,T>& surface, T(*F)( const gsMatrix<
     p1 << T(0.) , T(0.);
     p2 << T(1.) , T(1.);    
     gsMatrix<T> collocationPoints = uniformPointGrid( p1 , p2  );*/
-
-    
-    const int quadratureDegree = 6;
-    
-    gsMatrix<T> collocationPoints( 2, pow(quadratureDegree,2) );
+   
     
     // Source: https://pomax.github.io/bezierinfo/legendre-gauss.html
     double weights[6] = {0.3607615730481386,0.3607615730481386,0.4679139345726910,
@@ -38,6 +29,15 @@ T integrateFunctional( const gsTensorNurbs<2,T>& surface, T(*F)( const gsMatrix<
     double points[6] = {0.6612093864662645,-0.6612093864662645,-0.2386191860831969,
             0.2386191860831969,-0.9324695142031521,0.9324695142031521};
     
+    if( quadratureDegree == 2 )
+    {
+        weights[0] = 1.;
+        weights[1] = 1.;
+        points[0] = -0.5773502691896257;
+        points[1] = 0.5773502691896257;        
+    }
+            
+    gsMatrix<T> collocationPoints( 2, pow(quadratureDegree,2) );
     
     const gsKnotVector<T>& knotsX = surface.knots(0);
     const gsKnotVector<T>& knotsY = surface.knots(1);
@@ -104,7 +104,9 @@ OptParameterization<T>::OptParameterization( bool forcePositiveDet ):
     m_numElemX(0),
     m_numElemY(0),
     m_functional( areaOrthogonalityMeasure<T> ),
-    m_bForcePositiveDet( forcePositiveDet )
+    m_bForcePositiveDet( forcePositiveDet ),
+    m_bPolar(false),
+    m_orderOfQuadrature(6)
 {}
 
 //** default destructor */
@@ -114,19 +116,31 @@ OptParameterization<T>::~OptParameterization()
 
 
 template<typename T>
-void OptParameterization<T>::setParameterization( const gsTensorNurbs<2,T>& parameterization )
+void OptParameterization<T>::setParameterization( const gsTensorNurbs<2,T>& parameterization , bool polar )
 {
+    m_bPolar = polar;
     m_param = parameterization;
     
     m_numElemX = m_param.knots(0).uSize();
     m_numElemY = m_param.knots(1).uSize();
     
+    m_bCounterclockwise = true;
+    
     const T inf = std::numeric_limits<T>::infinity(); //or should be use max instead?
     
-    this->m_numDesignVars  = 2*(m_numElemX-2) * (m_numElemY-2);
-    this->m_desLowerBounds = gsMatrix<T>::Constant( this->m_numDesignVars , 1 , -inf );
-    this->m_desUpperBounds = gsMatrix<T>::Constant( this->m_numDesignVars , 1 ,  inf );
+    if( m_bPolar )
+    {
+        // new free parameters are the center (1 point) and the periodic interface points (m_num_ElemY -2 points).
+        this->m_numDesignVars  = 2*( (m_numElemX-2) * (m_numElemY-2) + 1 + m_numElemX-2);
+    }
+    else
+    {
+        this->m_numDesignVars  = 2*(m_numElemX-2) * (m_numElemY-2);
+    }
     
+    this->m_desLowerBounds = gsMatrix<T>::Constant( this->m_numDesignVars , 1 , -inf );
+    this->m_desUpperBounds = gsMatrix<T>::Constant( this->m_numDesignVars , 1 ,  inf );        
+        
     if( m_bForcePositiveDet )
     {            
         this->m_numConstraints =  4 * (m_numElemX-1) * (m_numElemY-1);
@@ -145,44 +159,69 @@ void OptParameterization<T>::setParameterization( const gsTensorNurbs<2,T>& para
     
     int k = 0;    
     this->m_curDesign.resize( this->m_numDesignVars , 1 );
-    for( int j = 1 ; j < m_numElemY-1 ; ++j )
+    
+    int jStart = (m_bPolar ? 0 : 1);
+    
+    for( int j = jStart ; j < m_numElemY-1 ; ++j )
         for( int i = 1 ; i < m_numElemX-1 ; ++i )
         {
             this->m_curDesign( k++ ) = m_param.coef( i + m_numElemX * j , 0 );
             this->m_curDesign( k++ ) = m_param.coef( i + m_numElemX * j , 1 );
         }
+        
+        
+    if( m_bPolar )
+    {   // singularity
+        this->m_curDesign( k++ ) = m_param.coef( 0 , 0 );
+        this->m_curDesign( k++ ) = m_param.coef( 0 , 1 );
+    }
 }
 
 //TODO: Use move schematics
 template<typename T>
 const gsTensorNurbs<2,T>& OptParameterization<T>::getParameterization()
 {
-    //updateParameterization( gsAsConstVector<T>( this->m_curDesign.data() , this->m_curDesign.cols()* this->m_curDesign.rows() ) );
+    updateParameterization( gsAsConstVector<T>( this->m_curDesign.data() , this->m_curDesign.cols()* this->m_curDesign.rows() ) );
     
-    int k = 0;
-    
-    for( int j = 1 ; j < m_numElemY-1 ; ++j )
-        for( int i = 1 ; i < m_numElemX-1 ; ++i )
-        {
-            m_param.coef( i + m_numElemX*j , 0 ) = this->m_curDesign( k++ );
-            m_param.coef( i + m_numElemX*j , 1 ) = this->m_curDesign( k++ );
-        }  
-         
-    //m_param.coefs().asVector() = this->m_curDesign;
     return m_param;
 }
 
 template< typename T >
 void OptParameterization<T>::updateParameterization(const gsAsConstVector<T>& u ) const
 {
-    int k = 0;
+    int jStart = (m_bPolar ? 0 : 1);
     
-    for( int j = 1 ; j < m_numElemY-1 ; ++j )
+    int k = 0;
+    for( int j = jStart ; j < m_numElemY-1 ; ++j )
         for( int i = 1 ; i < m_numElemX-1 ; ++i )
         {
             m_param.coef( i + m_numElemX*j , 0 ) = u( k++ );
             m_param.coef( i + m_numElemX*j , 1 ) = u( k++ );
-        }    
+        }
+        
+    
+    if( m_bPolar )
+    {
+        // copy periodic dirichlet boundary control points
+        int j = m_numElemY-1;
+        for( int i = 1 ; i < m_numElemX-1 ; ++i )
+        {
+            m_param.coef( i + m_numElemX*j , 0 ) = m_param.coef( i + m_numElemX*jStart , 0 );
+            m_param.coef( i + m_numElemX*j , 1 ) = m_param.coef( i + m_numElemX*jStart , 1 );
+        }
+        
+        T x = u( k++ );
+        T y = u( k++ );
+        
+        for( int j = 0 ; j < m_numElemY ; ++j )
+        {
+            m_param.coef( 0 + m_numElemX*j , 0 ) = x;
+            m_param.coef( 0 + m_numElemX*j , 1 ) = y;
+        }
+        
+        
+    }
+    
 }
 
 template<typename T>
@@ -238,7 +277,7 @@ T OptParameterization<T>::evalObj( const gsAsConstVector<T> & u ) const
     //const_cast<gsTensorNurbs<2,T>&>(m_param).setCoefs( gsAsMatrix<T>( (double*)u.data() , m_param.coefs().rows() , m_param.coefs().cols() ) );
     
     updateParameterization(u);
-    return integrateFunctional<T>( m_param , m_functional );
+    return integrateFunctional<T>( m_param , m_functional , true , m_orderOfQuadrature );
 }
 
 /*
@@ -296,7 +335,8 @@ void OptParameterization<T>::evalCon_into( const gsAsConstVector<T> & u, gsAsVec
         
         gsMatrix<T> D(4, collocationPoints.cols() );
         m_param.deriv_into( collocationPoints , D );
-        result = D.row(0).array() * D.row(3).array() - D.row(2).array() * D.row(1).array();
+        T sign = (m_bCounterclockwise ? 1. : -1.);
+        result = sign * ( D.row(0).array() * D.row(3).array() - D.row(2).array() * D.row(1).array() );
     }
     // can we use rows().array() here instead?
 }
