@@ -76,23 +76,23 @@ int main( int argc , char** argv )
     gsFileData<> domainFile;
     domainFile.read( domainFilePath );
     
-    if( !domainFile.has< gsTensorNurbs<2> >() )
+    if( !domainFile.has< gsTensorBSpline<2> >() )
     {
         gsInfo  << "Cannot open file '"
         << domainFilePath << "'.";
         return -1;
     }
     
-    std::unique_ptr< gsTensorNurbs<2>> pNurbs( domainFile.getFirst< gsTensorNurbs<2> >() );
+    std::unique_ptr< gsTensorBSpline<2>> pNurbs( domainFile.getFirst< gsTensorBSpline<2> >() );
     
     if( pNurbs == NULL )
     {
-        gsInfo  << "Cannot find a TensorNurbs<2,real_t> domain in file '"
+        gsInfo  << "Cannot find a TensorBSpline<2,real_t> domain in file '"
         << domainFilePath << "'.";
         return -1;
     }
     
-    gsTensorNurbs<2>& nurbs = *pNurbs;
+    gsTensorBSpline<2>& nurbs = *pNurbs;
     
     for( int i = 0 ; i <= refine ; ++i )
     {  
@@ -248,8 +248,7 @@ int main( int argc , char** argv )
             // 4. refinement
             
             
-            //basis[0].degreeDecrease(1);
-            //basis[1].degreeDecrease(1);
+            basis.degreeIncrease(1);
         }      
         
         nurbs.uniformRefine(1);

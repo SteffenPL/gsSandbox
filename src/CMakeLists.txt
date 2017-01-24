@@ -8,13 +8,13 @@ include_directories ( ${Boost_INCLUDE_DIR})
 
 
 set( SOURCES
-OptParameterization.hpp
+gsOptParametrization.hpp
 algorithms.cpp
 )
 
 set( HEADERS
 
-OptParameterization.h
+gsOptParametrization.h
 algorithms.h
 )
 

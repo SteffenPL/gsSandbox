@@ -345,8 +345,6 @@ bool isInHalfspace(const TVec2 &a , TVec2 b , TVec2 p)
 
 gsMatrix<real_t> findKernelPoint(gsMatrix<real_t> p)
 {
-    // this algorithm is not optimal, we just want to get a point
-    // without much programming affort.
 
     // idea:
     // consider the half space, spanned by two connected points of the

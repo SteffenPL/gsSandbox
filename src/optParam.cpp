@@ -6,7 +6,7 @@
 
 #include <boost/filesystem.hpp>
 
-#include "OptParametrization.h"
+#include "gsOptParametrization.h"
 
 #include "algorithms.h"
 
@@ -93,7 +93,7 @@ int main(int argc, char* argv[])
     
     
     // init optimization
-    OptParametrization<2,real_t> opt;
+    gsOptParametrization<2,real_t> opt;
     //opt.forcePositiveDeterminate( bForcePositiveDeterminat ); 
         
     if( functional == "areaOrth" )
@@ -142,7 +142,7 @@ int main(int argc, char* argv[])
     for( int i = 0 ; i < cIterations ; ++i )
     {
         
-        opt.setParametrization( surface );//, bPolar );
+        opt.setInitialParametrization( surface );//, bPolar );
         opt.solve();
         surface = opt.getParametrization();
         

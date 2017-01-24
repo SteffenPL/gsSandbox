@@ -6,7 +6,7 @@
 
 //#include "extensions/gsIpopt/gsOptProblem.h"
 
-#include "OptParametrization.h"
+#include "gsOptParametrization.h"
 
 #include <boost/filesystem.hpp>
 
