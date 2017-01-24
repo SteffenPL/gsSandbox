@@ -44,7 +44,7 @@ std::unique_ptr<gsBSpline<>> loadBoundaryFromFile(const std::string &filename)
     return std::unique_ptr<gsBSpline<>>();
 }
 
-void saveParameterization( const gsTensorNurbs<2,real_t>& surface , std::string& filename , std::string postfix )
+void saveParameterization( const gsTensorBSpline<2,real_t>& surface , std::string& filename , std::string postfix )
 {
     // write gismo xml file
     gsFileData<real_t> file;
@@ -131,7 +131,7 @@ void fillBoundaryData(const gsBSpline<> &boundary
     X(0,0) = 0.5 * boundaryPoints.col(0) + 0.5 * boundaryPoints.col( numberOfPoints -1 );
 }
 
-gsTensorNurbs<2, real_t> bilinearlyBlendedCoons(const gsBSpline<> &boundary
+gsTensorBSpline<2, real_t> bilinearlyBlendedCoons(const gsBSpline<> &boundary
 , int n , int m , int degree , bool bRectangle )
 {
     gsMatrix<gsMatrix<real_t, 2, 1>> X(n, m);
@@ -181,7 +181,7 @@ gsTensorNurbs<2, real_t> bilinearlyBlendedCoons(const gsBSpline<> &boundary
 
     gsTensorBSplineBasis<2, real_t> basis(kvx , kvy);
     // use std::move  (but I excpect the compiler to be clever enought to optimize this...)
-    return gsTensorNurbs<2, real_t>(basis , coefs);
+    return gsTensorBSpline<2, real_t>(basis , coefs);
 }
 
 int fromMatrixToVector(int i , int j , int n , int)
@@ -189,7 +189,7 @@ int fromMatrixToVector(int i , int j , int n , int)
     return i + j * n;
 }
 
-gsTensorNurbs<2, real_t> minimumPrinciple(const gsBSpline<> &boundary
+gsTensorBSpline<2, real_t> minimumPrinciple(const gsBSpline<> &boundary
 , int n , int m , int degree , double start , bool bRectangle)
 {
     gsMatrix< gsMatrix<real_t, 2, 1> > X;
@@ -292,11 +292,11 @@ gsTensorNurbs<2, real_t> minimumPrinciple(const gsBSpline<> &boundary
     gsKnotVector<real_t> kvy(0. , 1. , m - degree + 1 , degree - 1);
 
     gsTensorBSplineBasis<2, real_t> basis(kvx , kvy);
-    return gsTensorNurbs<2, real_t>(basis , coefs);
+    return gsTensorBSpline<2, real_t>(basis , coefs);
 
 }
 
-gsTensorNurbs<2, real_t> unidirectionalInterpolation(gsBSpline<> boundary
+gsTensorBSpline<2, real_t> unidirectionalInterpolation(gsBSpline<> boundary
         , int cOnBoundary
         , int cHorizontal
         , int degree
@@ -304,7 +304,7 @@ gsTensorNurbs<2, real_t> unidirectionalInterpolation(gsBSpline<> boundary
 {
     if (cHorizontal < 2) {
         gsInfo << "cHorizontal must be >= 2 \n\n";
-        return gsTensorNurbs<2, real_t>();
+        return gsTensorBSpline<2, real_t>();
     }
 
     gsMatrix<real_t> times(1 , 2 * cOnBoundary);
@@ -323,7 +323,7 @@ gsTensorNurbs<2, real_t> unidirectionalInterpolation(gsBSpline<> boundary
     gsKnotVector<real_t> kvy(0. , 1. , 2 - degree + 1            , degree - 1);
 
     gsTensorBSplineBasis<2, real_t> basis(kvx , kvy);
-    gsTensorNurbs<2, real_t> nurbs(basis , coefs.transpose());
+    gsTensorBSpline<2, real_t> nurbs(basis , coefs.transpose());
 
     // refine, to get 'cHorizontal' many inner control points
 
@@ -400,7 +400,7 @@ gsMatrix<real_t> findKernelPoint(gsMatrix<real_t> p)
     }
 }
 
-gsTensorNurbs<2, real_t> naivePolarChart(gsBSpline<> boundary
+gsTensorBSpline<2, real_t> naivePolarChart(gsBSpline<> boundary
         , int numberOfPolarLines
         , int degree
         , bool bRectangle )
@@ -467,17 +467,7 @@ gsTensorNurbs<2, real_t> naivePolarChart(gsBSpline<> boundary
     gsKnotVector<real_t> kvy(0. , 1. , boundary.coefsSize() - degree + 1 , degree - 1);
 
     gsTensorBSplineBasis<2, real_t> basis(kvx , kvy);
-    return gsTensorNurbs<2, real_t>(basis , coefs);
-}
-
-
-gsTensorNurbs<2, real_t> centricPotentialFlow(const gsBSpline<> &curve ,
-        int numberOfPolarLines ,
-        int numberOfPolarCircles ,
-        real_t midPoint_x ,
-        real_t midPoint_y)
-{
-
+    return gsTensorBSpline<2, real_t>(basis , coefs);
 }
 
 

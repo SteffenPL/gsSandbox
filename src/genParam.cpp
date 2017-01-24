@@ -6,7 +6,7 @@
 
 //#include "extensions/gsIpopt/gsOptProblem.h"
 
-#include "OptParameterization.h"
+#include "OptParametrization.h"
 
 #include <boost/filesystem.hpp>
 
@@ -86,7 +86,7 @@ int main(int argc, char* argv[])
 
     //curve.basis().enforceOuterKnotsPeriodic();
 
-    gsTensorNurbs<2,real_t> surface;
+    gsTensorBSpline<2,real_t> surface;
 
     if( algorithm == "bil" )
         surface = bilinearlyBlendedCoons( curve , n , m , degree , bRectangle );
@@ -96,22 +96,6 @@ int main(int argc, char* argv[])
         surface = naivePolarChart( curve , m , degree , bRectangle );
     else if( algorithm == "uni" )
         surface = unidirectionalInterpolation( curve , n , m , degree , bRectangle );
-
-
-    if( bOpt )
-    {
-        OptParameterization<real_t> opt;
-        opt.setParameterization( surface );
-
-        opt.solve();
-
-        surface = opt.getParameterization();
-    }
-
-    //real_t area = calcArea( surface , nDetValues );
-
-
-    //gsInfo << "Surface area: " << area << "\n";
 
     // 5. saving surface, basis and control net to a file
     if (output != "")
@@ -158,12 +142,6 @@ int main(int argc, char* argv[])
             
             gsWriteParaview( controlNet , prefix + "Mesh" );
             
-            appendFunctional<real_t>( surface , contMechanics<real_t> );
-            
-            gsWriteParaview(surface , surfaceOutput , 5000 );
-            system( ("paraview " + surfaceOutput + ".vts").c_str() );
-            
-
             gsInfo << "Writing the boundary curve to a paraview file: "
                 << curveOutput << ".vtp"
                 << "\n\n";

@@ -14,7 +14,7 @@ std::unique_ptr<gsBSpline<> > loadBoundaryFromFile(const std::string &filename);
 /*
  * Save the surface in various fileformats: .xml , Paraview: Surface/Controlnet
  */
-void saveParameterization( const gsTensorNurbs<2,real_t>& surface , std::string& filename , std::string postfix = "" );
+void saveParameterization( const gsTensorBSpline<2,real_t>& surface , std::string& filename , std::string postfix = "" );
 
 bool isClockwise( const gsBSpline<>& curve );
 
@@ -33,17 +33,17 @@ void fillBoundaryData(const gsBSpline<> &boundary
 , bool bRectangle = false
 );
 
-gsTensorNurbs<2, real_t> bilinearlyBlendedCoons(const gsBSpline<> &boundary
+gsTensorBSpline<2, real_t> bilinearlyBlendedCoons(const gsBSpline<> &boundary
 , int n , int m , int degree , bool bRectangle = false);
 
-gsTensorNurbs<2, real_t> naivePolarChart(gsBSpline<> boundary
+gsTensorBSpline<2, real_t> naivePolarChart(gsBSpline<> boundary
 , int numberOfPolarLines
 , int degree
 , bool bRectangle = false
 );
 
 
-gsTensorNurbs<2, real_t> unidirectionalInterpolation(gsBSpline<> boundary
+gsTensorBSpline<2, real_t> unidirectionalInterpolation(gsBSpline<> boundary
 , int cOnBoundary
 , int cHorizontal
 , int degree
@@ -54,16 +54,8 @@ gsTensorNurbs<2, real_t> unidirectionalInterpolation(gsBSpline<> boundary
  */
 int fromMatrixToVector(int i , int j , int n , int);
 
-gsTensorNurbs<2, real_t> minimumPrinciple(const gsBSpline<> &boundary
+gsTensorBSpline<2, real_t> minimumPrinciple(const gsBSpline<> &boundary
 , int n , int m , int degree , double start = 0. , bool bRectangle = false);
-
-
-
-gsTensorNurbs<2, real_t> centricPotentialFlow(const gsBSpline<> &curve ,
-                                              int numberOfPolarLines ,
-                                              int numberOfPolarCircles ,
-                                              real_t midPoint_x ,
-                                              real_t midPoint_y);
 
 
 

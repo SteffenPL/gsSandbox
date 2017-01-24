@@ -6,7 +6,7 @@
 
 #include <boost/filesystem.hpp>
 
-#include "OptParameterization.h"
+#include "OptParametrization.h"
 
 #include "algorithms.h"
 
@@ -42,44 +42,46 @@ int main(int argc, char* argv[])
     gsFileData<> domainFile;
     domainFile.read( input );
     
-    std::unique_ptr< gsTensorNurbs<2>> pNurbs;
+    std::unique_ptr< gsTensorBSpline<2>> pTensorBSpline;
     
-    if( domainFile.has< gsTensorNurbs<2> >() )
+    if( domainFile.has< gsTensorBSpline<2> >() )
     {
-        pNurbs = std::unique_ptr< gsTensorNurbs<2>>( domainFile.getFirst< gsTensorNurbs<2> >() );
+        pTensorBSpline = std::unique_ptr< gsTensorBSpline<2>>( domainFile.getFirst< gsTensorBSpline<2> >() );
         
-        if( pNurbs == NULL )
+        if( pTensorBSpline == NULL )
         {
-            gsInfo  << "Cannot find a TensorNurbs<2,real_t> domain in file '"
+            gsInfo  << "Cannot find a gsTensorBSpline<2,real_t> domain in file '"
             << input << "'.";
             return -1;
         }
         
     }
-    else if( domainFile.has< gsTensorBSpline<2> >() )
+    else if( domainFile.has< gsTensorNurbs<2> >() )
     {
-        std::unique_ptr< gsTensorBSpline<2> >pBSpline;
+        std::unique_ptr< gsTensorNurbs<2> >pNurbs;
         
-        pBSpline = std::unique_ptr< gsTensorBSpline<2>>( domainFile.getFirst< gsTensorBSpline<2> >() );
+        pNurbs = std::unique_ptr< gsTensorNurbs<2>>( domainFile.getFirst< gsTensorNurbs<2> >() );
         
-        if( pBSpline == NULL )
+        if( pNurbs == NULL )
         {
             gsInfo  << "Cannot find a TensorBSpline<2,real_t> domain in file '"
             << input << "'.";
             return -1;
         }
         
-        pNurbs = std::unique_ptr< gsTensorNurbs<2> >( new gsTensorNurbs<2>( pBSpline->knots(0) , pBSpline->knots(1) , give( pBSpline->coefs()) ) ); 
+        gsInfo << "Warning: Converting Tensor Nurbs to BSpline, i.e. ignoring all weights.\n";
+        
+        pTensorBSpline = std::unique_ptr< gsTensorBSpline<2> >( new gsTensorBSpline<2>( pNurbs->knots(0) , pNurbs->knots(1) , give( pNurbs->coefs()) ) ); 
     }
     else
     {
         gsInfo  << "Cannot open file  '"
-        << input << "' (no TensorBSpline oder TensorNurbs found).";
+        << input << "' (no TensorBSpline or TensorNurbs found).";
         return -1;
     }
     
     
-    gsTensorNurbs<2>& surface = *pNurbs;
+    gsTensorBSpline<2>& surface = *pTensorBSpline; // TODO: remove later, possible memory leak if copied in a wrong way
     
     
     // create folder for the output
@@ -91,24 +93,19 @@ int main(int argc, char* argv[])
     
     
     // init optimization
-    OptParameterization<real_t> opt;
-    opt.setForcePositiveDeterminate( bForcePositiveDeterminat ); 
-    
-    opt.m_orderOfQuadrature = 6;
-    
-    if( quadratureRule == "gauss2" )
-        opt.m_orderOfQuadrature = 2;
-    
+    OptParametrization<2,real_t> opt;
+    //opt.forcePositiveDeterminate( bForcePositiveDeterminat ); 
+        
     if( functional == "areaOrth" )
-        opt.setFunctional( areaOrthogonalityMeasure<real_t> );
+        opt.setFunctional( areaOrthogonalityMeasure<2,real_t> );
     else if( functional == "liao" )
-        opt.setFunctional( liaoFunctional<real_t> );
+        opt.setFunctional( liaoFunctional<2,real_t> );
     else if( functional == "winslow" )
-        opt.setFunctional( winslowFunctional<real_t> );
+        opt.setFunctional( winslowFunctional<2,real_t> );
     else if( functional == "contMechanics" )
         opt.setFunctional( contMechanics<real_t> );
     else if( functional == "det" )
-        opt.setFunctional( detMeasure<real_t> );
+        opt.setFunctional( detMeasure<2,real_t> );
     else
     {
         cIterations = -1;
@@ -116,7 +113,7 @@ int main(int argc, char* argv[])
     }
     
     // we want to plot the effect of variation
-    if( iVariation > -1 )
+    /*if( iVariation > -1 )
         {
         // original surface with small pertubations
         gsTensorNurbs<2,real_t> dsurface = surface; 
@@ -137,7 +134,7 @@ int main(int argc, char* argv[])
         }
 
         saveParameterization( variationField , outputPath , "_functional" );
-    }
+    }*/
     
     // save intermediate results
     saveParameterization( surface , outputPath , "_0" );
@@ -145,9 +142,9 @@ int main(int argc, char* argv[])
     for( int i = 0 ; i < cIterations ; ++i )
     {
         
-        opt.setParameterization( surface , bPolar );
+        opt.setParametrization( surface );//, bPolar );
         opt.solve();
-        surface = opt.getParameterization();
+        surface = opt.getParametrization();
         
         // save intermediate results
         saveParameterization( surface , outputPath , "_" + std::to_string(i+1) );
